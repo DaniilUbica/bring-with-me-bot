@@ -8,7 +8,7 @@ fn main() {
 
     Database::create_table();
 
-    //Database::add_record(["нож", "knife", "Бытовые ножи и ножницы можно провозить в багаже. Правда, если вам захочется провезти тесак, возможно, его отправят на экспертизу, не холодное ли оно оружие. А вот в ручной клади нельзя провозить даже складные (без фиксатора) дорожные, перочинные ножи с длиной лезвия менее 60 мм."].to_vec());
+    Database::add_record(["нож", "knife", "Бытовые ножи и ножницы можно провозить в багаже. Правда, если вам захочется провезти тесак, возможно, его отправят на экспертизу, не холодное ли оно оружие. А вот в ручной клади нельзя провозить даже складные (без фиксатора) дорожные, перочинные ножи с длиной лезвия менее 60 мм.", "Household knives and scissors can be carried in luggage. However, if you want to bring a cleaver, perhaps it will be sent for examination, whether it is a cold weapon. But in hand luggage it is impossible to carry even folding (without a lock) travel, penknives with a blade length of less than 60 mm."].to_vec());
 
     let update_params_builder = GetUpdatesParams::builder();
     let mut update_params = update_params_builder.clone().build();
