@@ -3,11 +3,13 @@ pub mod SendInfo {
     use std::fs::*;
     use std::io::ErrorKind;
     use std::io::Write;
-    
+    use std::fs::OpenOptions;
+    use mail_send::{mail_builder::*, SmtpClientBuilder};
+
 const FILENAME: &str = "items.txt";
 
 fn open_file(filename: &str) -> File {
-    let file = match File::open(filename) {
+    let file = match OpenOptions::new().write(true).append(true).open(filename) {
         Ok(file) => file,
         Err(err) => {
             if err.kind() == ErrorKind::NotFound {
@@ -28,7 +30,10 @@ fn open_file(filename: &str) -> File {
 pub fn write_item(item: String) {
     let mut f = open_file(FILENAME);
 
-    write!(&mut f, "{}\n" ,item);
+    match write!(&mut f, "{}\n" ,item) {
+        Ok(_) => (),
+        Err(err) => eprintln!("Error in writing to file: {err:?}"),
+    }
 }
 
 }

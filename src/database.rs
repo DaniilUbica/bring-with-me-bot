@@ -48,6 +48,7 @@ pub mod Database {
     }
 
     pub fn get_record(name: String) -> String {
+
         let query = format!("SELECT DISTINCT rus_info FROM {TABLE_NAME} WHERE rus_name = '{name}'");
         let mut answer = String::new();
 
@@ -77,8 +78,6 @@ pub mod Database {
         else {
             let query = format!("SELECT DISTINCT eng_info FROM {TABLE_NAME} WHERE eng_name = '{name}'");
 
-            let connection = connect_to_db();
-
             connection
             .iterate(query, |pairs| {
                 for &(_name, value) in pairs.iter() {
@@ -98,6 +97,59 @@ pub mod Database {
             .expect("Error in request to database");
         }
         answer
+
+    }
+
+    pub fn get_item_names(name: &String) -> (String, String) {
+        let mut rus_name = String::new();
+        let mut eng_name = String::new();
+
+        let query = format!("SELECT DISTINCT eng_name FROM {TABLE_NAME} WHERE rus_name = '{name}'");
+
+        let connection = connect_to_db();
+
+        connection
+        .iterate(query, |pairs| {
+            for &(_name, value) in pairs.iter() {
+                eng_name = match value {
+                    Some(val) => val.to_string(),
+                    None => { 
+                        eprintln!("Can't get value from database");
+                        " ".to_string()
+                    }
+                };
+                rus_name = name.to_string();
+            }
+            true
+        })
+        .expect("Error in request to database");
+
+        if !eng_name.is_empty() {
+            (rus_name, eng_name)
+        }
+        
+        else {
+            let query = format!("SELECT DISTINCT rus_name FROM {TABLE_NAME} WHERE eng_name = '{name}'");
+    
+            connection
+            .iterate(query, |pairs| {
+                for &(_name, value) in pairs.iter() {
+                    rus_name = match value {
+                        Some(val) => val.to_string(),
+                        None => { 
+                            eprintln!("Can't get value from database");
+                            " ".to_string()
+                        }
+                    };
+                    eng_name = name.to_string();
+                }
+                true
+            })
+            .expect("Error in request to database");
+
+            (rus_name, eng_name)
+        }
+
 
     }
 

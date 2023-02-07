@@ -9,3 +9,4 @@ edition = "2021"
 frankenstein = { version = "0.23", default-features = false, features = ["async-http-client"] }
 tokio = { version = "1.25.0", features = ["full"] }
 sqlite = "*"
+mail-send = "0.3.1"

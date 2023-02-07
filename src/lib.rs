@@ -1,10 +1,13 @@
 use frankenstein::Message;
 use frankenstein::SendMessageParams;
+use frankenstein::SendPhotoParams;
 use frankenstein::AsyncTelegramApi;
 use frankenstein::AsyncApi;
 use frankenstein::KeyboardButton;
 use frankenstein::ReplyKeyboardMarkup;
 use frankenstein::ReplyMarkup;
+
+use database::Database::get_item_names;
 use send_info::SendInfo::write_item;
 
 pub mod database;
@@ -30,11 +33,15 @@ pub async fn set_keyboard_markup() -> ReplyKeyboardMarkup {
     keyboard_markup
 }
 
-pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &ReplyKeyboardMarkup) -> SendMessageParams {
-    let mut username = String::new();
+pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &ReplyKeyboardMarkup) -> (SendMessageParams, SendPhotoParams) {
     let send_message_params;
+    let send_photo_params;
     let message_text;
-                        
+    let photo_path;
+    
+    let mut username = String::new();
+    let mut request = message.clone().text.unwrap().to_lowercase();
+
     match api.get_me().await {
         Ok(response) => username = response.result.username.expect("Got no username"),
         Err(error) => eprintln!("Failed to get me: {error:?}"),
@@ -42,10 +49,12 @@ pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &Re
 
     if message.clone().text == None {
         message_text = format!("Не понимаю тебя");
+        photo_path = std::path::PathBuf::from(format!("./Photos/question.png"));
     }
 
     else if message.clone().text.unwrap() == "/start" {
         message_text = format!("Привет, я @{}", username);
+        photo_path = std::path::PathBuf::from(format!("./Photos/logo.png"));
     }
 
     else if message.clone().text.unwrap() == "/commands" {
@@ -60,31 +69,39 @@ pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &Re
         }
 
         message_text = commands;
+        photo_path = std::path::PathBuf::from(format!("./Photos/commands.png"));
     }
 
     else if !COMMANDS.contains(&&message.clone().text.unwrap()[..]) {
 
         if message.clone().text.unwrap().chars().nth(0).unwrap() != '/' {
 
-        let request = message.clone().text.unwrap().to_lowercase();
-
             let response = Database::get_record(request.clone());
+            let (rus_request, eng_request) = get_item_names(&request);
+
+            if request == rus_request {
+                request = eng_request;
+            }
 
             if !response.is_empty() {
-                message_text = response;
+                message_text = response.clone();
+                photo_path = std::path::PathBuf::from(format!("./Photos/{}.png", request.clone().trim()));
             }
             else {
                 message_text = format!("Не могу найти предмет '{}' в моей базе данных", message.clone().text.unwrap());
+                photo_path = std::path::PathBuf::from(format!("./Photos/dont_know.png"));
                 write_item(request);
             }
         }
         else {
             message_text = "Не понимаю тебя".to_string();
+            photo_path = std::path::PathBuf::from(format!("./Photos/question.png"));
         }
     }
 
     else {
         message_text = "Не понимаю тебя".to_string();
+        photo_path = std::path::PathBuf::from(format!("./Photos/question.png"));
     }
 
     send_message_params = SendMessageParams::builder()
@@ -93,6 +110,11 @@ pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &Re
     .reply_markup(ReplyMarkup::ReplyKeyboardMarkup(keyboard_markup.clone()))
     .build();
 
-    send_message_params
+    send_photo_params = SendPhotoParams::builder()
+    .chat_id(message.clone().chat.id)
+    .photo(photo_path)
+    .build();
+
+    (send_message_params, send_photo_params)
 }
 
