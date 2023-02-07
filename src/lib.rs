@@ -1,44 +1,41 @@
 use frankenstein::Message;
 use frankenstein::SendMessageParams;
-use frankenstein::TelegramApi;
-use frankenstein::Api;
+use frankenstein::AsyncTelegramApi;
+use frankenstein::AsyncApi;
 use frankenstein::KeyboardButton;
 use frankenstein::ReplyKeyboardMarkup;
 use frankenstein::ReplyMarkup;
+use send_info::SendInfo::write_item;
 
 pub mod database;
+pub mod send_info;
 
 pub use crate::database::*;
+pub use crate::send_info::*;
 
 pub static TOKEN: &str = "TOKEN";
 
-pub static COMMANDS: [&str; 3] = ["/check", "/start", "/commands"];
-pub static mut NEED_CHECK: bool = false;
+pub static COMMANDS: [&str; 2] = ["/start", "/commands"];
 
-pub fn set_keyboard_markup() -> ReplyKeyboardMarkup {
+pub async fn set_keyboard_markup() -> ReplyKeyboardMarkup {
     let mut keyboard: Vec<Vec<KeyboardButton>> = Vec::new();
-    let mut row_check: Vec<KeyboardButton> = Vec::new();
     let mut row_commands: Vec<KeyboardButton> = Vec::new();
-
-    let check_button = KeyboardButton::builder().text("/check").build();
-    row_check.push(check_button);
 
     let commands_button = KeyboardButton::builder().text("/commands").build();
     row_commands.push(commands_button);
 
     keyboard.push(row_commands);
-    keyboard.push(row_check);
     let keyboard_markup = ReplyKeyboardMarkup::builder().keyboard(keyboard).build();
 
     keyboard_markup
 }
 
-pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboardMarkup) -> SendMessageParams {
+pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &ReplyKeyboardMarkup) -> SendMessageParams {
     let mut username = String::new();
     let send_message_params;
     let message_text;
                         
-    match api.get_me() {
+    match api.get_me().await {
         Ok(response) => username = response.result.username.expect("Got no username"),
         Err(error) => eprintln!("Failed to get me: {error:?}"),
     }
@@ -48,23 +45,10 @@ pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboard
     }
 
     else if message.clone().text.unwrap() == "/start" {
-        unsafe {
-            NEED_CHECK = false;
-        }
         message_text = format!("Привет, я @{}", username);
     }
 
-    else if message.clone().text.unwrap() == "/check" {
-        unsafe {
-            NEED_CHECK = true;
-        }
-        message_text = "Что ты хочешь проверить?".to_string();
-    }
-
     else if message.clone().text.unwrap() == "/commands" {
-        unsafe {
-            NEED_CHECK = false;
-        }
         let mut commands = String::from("Команды, которые я знаю: \n");
 
         for command in COMMANDS {
@@ -80,29 +64,26 @@ pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboard
 
     else if !COMMANDS.contains(&&message.clone().text.unwrap()[..]) {
 
+        if message.clone().text.unwrap().chars().nth(0).unwrap() != '/' {
+
         let request = message.clone().text.unwrap().to_lowercase();
 
-        unsafe {
-            if NEED_CHECK {
-                let response = Database::get_record(request);
+            let response = Database::get_record(request.clone());
 
-                if !response.is_empty() {
-                    message_text = response;
-                }
-                else {
-                    message_text = format!("Не могу найти предмет '{}' в моей базе данных", message.clone().text.unwrap());
-                }
+            if !response.is_empty() {
+                message_text = response;
             }
             else {
-                message_text = "Не понимаю тебя".to_string();
+                message_text = format!("Не могу найти предмет '{}' в моей базе данных", message.clone().text.unwrap());
+                write_item(request);
             }
+        }
+        else {
+            message_text = "Не понимаю тебя".to_string();
         }
     }
 
     else {
-        unsafe {
-            NEED_CHECK = false;
-        }
         message_text = "Не понимаю тебя".to_string();
     }
 

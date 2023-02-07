@@ -1,10 +1,11 @@
 use frankenstein::GetUpdatesParams;
-use frankenstein::TelegramApi;
-use frankenstein::{Api, UpdateContent};
+use frankenstein::AsyncTelegramApi;
+use frankenstein::{AsyncApi, UpdateContent};
 use tg_bot::Database;
 
-fn main() {
-    let api = Api::new(tg_bot::TOKEN);
+#[tokio::main]
+async fn main() {
+    let api = AsyncApi::new(tg_bot::TOKEN);
 
     Database::create_table();
 
@@ -13,21 +14,27 @@ fn main() {
     let update_params_builder = GetUpdatesParams::builder();
     let mut update_params = update_params_builder.clone().build();
 
-    let keyboard_markup = tg_bot::set_keyboard_markup();
+    let keyboard_markup = tg_bot::set_keyboard_markup().await;
 
     loop {
-        let result = api.get_updates(&update_params);
+        let result = api.get_updates(&update_params).await;
 
         match result {
             Ok(response) => {
                 for update in response.result {
                     if let UpdateContent::Message(message) = update.content {
 
-                        let send_message_params = tg_bot::send_message(message, &api, &keyboard_markup);
-                        
-                        if let Err(err) = api.send_message(&send_message_params) {
-                            println!("Failed to send message: {err:?}");
-                        }
+                        let api_clone = api.clone();
+
+                        let keyboard_clone = keyboard_markup.clone();
+
+                        tokio::spawn(async move {
+                            let send_message_params = tg_bot::send_message(message, &api_clone, &keyboard_clone).await;
+
+                            if let Err(err) = api_clone.send_message(&send_message_params).await {
+                                println!("Failed to send message: {err:?}");
+                            }
+                        });
                     }
                     update_params = update_params_builder
                         .clone()
