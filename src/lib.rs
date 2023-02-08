@@ -1,14 +1,14 @@
 use frankenstein::Message;
 use frankenstein::SendMessageParams;
 use frankenstein::SendPhotoParams;
-use frankenstein::AsyncTelegramApi;
-use frankenstein::AsyncApi;
+use frankenstein::TelegramApi;
+use frankenstein::Api;
 use frankenstein::KeyboardButton;
 use frankenstein::ReplyKeyboardMarkup;
 use frankenstein::ReplyMarkup;
 
 use database::Database::get_item_names;
-use send_info::SendInfo::write_item;
+use send_info::send_info::write_item;
 
 pub mod database;
 pub mod send_info;
@@ -20,7 +20,7 @@ pub static TOKEN: &str = "TOKEN";
 
 pub static COMMANDS: [&str; 2] = ["/start", "/commands"];
 
-pub async fn set_keyboard_markup() -> ReplyKeyboardMarkup {
+pub fn set_keyboard_markup() -> ReplyKeyboardMarkup {
     let mut keyboard: Vec<Vec<KeyboardButton>> = Vec::new();
     let mut row_commands: Vec<KeyboardButton> = Vec::new();
 
@@ -33,7 +33,7 @@ pub async fn set_keyboard_markup() -> ReplyKeyboardMarkup {
     keyboard_markup
 }
 
-pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &ReplyKeyboardMarkup) -> (SendMessageParams, SendPhotoParams) {
+pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboardMarkup) -> (SendMessageParams, SendPhotoParams) {
     let send_message_params;
     let send_photo_params;
     let message_text;
@@ -42,7 +42,7 @@ pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &Re
     let mut username = String::new();
     let mut request = message.clone().text.unwrap().to_lowercase();
 
-    match api.get_me().await {
+    match api.get_me() {
         Ok(response) => username = response.result.username.expect("Got no username"),
         Err(error) => eprintln!("Failed to get me: {error:?}"),
     }
@@ -93,6 +93,7 @@ pub async fn send_message(message: Message, api: &AsyncApi, keyboard_markup: &Re
                 write_item(request);
             }
         }
+        
         else {
             message_text = "Не понимаю тебя".to_string();
             photo_path = std::path::PathBuf::from(format!("./Photos/question.png"));

@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-frankenstein = { version = "0.23", default-features = false, features = ["async-http-client"] }
-tokio = { version = "1.25.0", features = ["full"] }
+frankenstein = "0.23"
 sqlite = "*"
-mail-send = "0.3.1"
+lettre = "0.10.2"
