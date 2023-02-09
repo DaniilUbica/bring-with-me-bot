@@ -41,12 +41,12 @@ pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboard
     
     let mut username = String::new();
     let mut request = message.clone().text.unwrap().to_lowercase();
-
+    
     match api.get_me() {
         Ok(response) => username = response.result.username.expect("Got no username"),
         Err(error) => eprintln!("Failed to get me: {error:?}"),
     }
-
+    
     if message.clone().text == None {
         message_text = format!("Не понимаю тебя");
         photo_path = std::path::PathBuf::from(format!("./Photos/question.png"));
@@ -68,7 +68,7 @@ pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboard
             commands += "\n";
         }
 
-        message_text = commands;
+        message_text = commands;    
         photo_path = std::path::PathBuf::from(format!("./Photos/commands.png"));
     }
 
@@ -93,7 +93,6 @@ pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboard
                 write_item(request);
             }
         }
-        
         else {
             message_text = "Не понимаю тебя".to_string();
             photo_path = std::path::PathBuf::from(format!("./Photos/question.png"));

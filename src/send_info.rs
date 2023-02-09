@@ -43,7 +43,7 @@ pub mod send_info {
 
         let email = Message::builder()
         .from("Botik <sender@gmail.com>".parse().unwrap())
-        .to("<receiver@gmail.com>".parse().unwrap())
+        .to("<receiver@gmail.com@gmail.com>".parse().unwrap())
         .subject("Unknown items")
         .body(String::from(format!("Unknown items:\n {items}")))
         .unwrap();

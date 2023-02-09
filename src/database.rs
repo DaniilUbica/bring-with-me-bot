@@ -4,7 +4,7 @@ pub mod Database {
     use std::fs::File;
 
     const TABLE_NAME: &str = "items";
-    const DATABASE_NAME: &str = "tg_bot_db.db";
+    const DATABASE_NAME: &str = "items.db";
 
     fn connect_to_db() -> sqlite::Connection {
         let connection = match sqlite::open(DATABASE_NAME) {
@@ -21,7 +21,8 @@ pub mod Database {
     }
 
     pub fn create_table() {
-        let query = format!("CREATE TABLE IF NOT EXISTS {TABLE_NAME} (rus_name TEXT, eng_name TEXT, rus_info TEXT, eng_info TEXT)");
+        let query = format!("CREATE TABLE IF NOT EXISTS {TABLE_NAME} (rus_name TEXT, eng_name TEXT, rus_info TEXT, eng_info TEXT,
+             rus_allowed TEXT, eng_allowed TEXT)");
 
         let connection = connect_to_db();
 
@@ -33,8 +34,10 @@ pub mod Database {
         let eng = columns[1];
         let rus_info = columns[2];
         let eng_info = columns[3];
+        let rus_allowed = columns[4];
+        let eng_allowed = columns[5];
 
-        let query = format!("INSERT INTO {TABLE_NAME} VALUES ('{rus}', '{eng}', '{rus_info}', '{eng_info}')");
+        let query = format!("INSERT INTO {TABLE_NAME} VALUES ('{rus}', '{eng}', '{rus_info}', '{eng_info}', '{rus_allowed}', '{eng_allowed}')");
 
         let connection = connect_to_db();
 
@@ -49,7 +52,7 @@ pub mod Database {
 
     pub fn get_record(name: String) -> String {
 
-        let query = format!("SELECT DISTINCT rus_info FROM {TABLE_NAME} WHERE rus_name = '{name}'");
+        let query = format!("SELECT DISTINCT rus_info, rus_allowed FROM {TABLE_NAME} WHERE rus_name = '{name}'");
         let mut answer = String::new();
 
         let connection = connect_to_db();
@@ -64,19 +67,23 @@ pub mod Database {
                         " "
                     }
                 };
-
-                let s = format!("{}", value);
-                answer = s;
+                let s = format!(" {}", value);
+                answer += &s;
             }
             true
         })
         .expect("Error in request to database");
 
         if !answer.is_empty() {
+
+            let v: Vec<&str> = answer.split_whitespace().collect();
+
+            let answer = v[0].to_owned() + "\n\nКороче говоря: " + v[1];
+
             return answer;
         }
         else {
-            let query = format!("SELECT DISTINCT eng_info FROM {TABLE_NAME} WHERE eng_name = '{name}'");
+            let query = format!("SELECT DISTINCT eng_info, eng_allowed FROM {TABLE_NAME} WHERE eng_name = '{name}'");
 
             connection
             .iterate(query, |pairs| {
@@ -89,13 +96,16 @@ pub mod Database {
                         }
                     };
 
-                    let s = format!("{}", value);
-                    answer = s;
+                    let s = format!(" {}", value);
+                    answer += &s;
                 }
                 true
             })
             .expect("Error in request to database");
         }
+        let v: Vec<&str> = answer.split_whitespace().collect();
+
+        let answer = v[0].to_owned() + "\n\nIn short: " + v[1];
         answer
 
     }
@@ -149,7 +159,6 @@ pub mod Database {
 
             (rus_name, eng_name)
         }
-
 
     }
 

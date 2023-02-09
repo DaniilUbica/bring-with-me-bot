@@ -11,6 +11,8 @@ fn main() {
 
     Database::create_table();
 
+    Database::add_record(["нож", "knife", "rus_info", "eng_info", "rus_allowed", "eng_allowed"].to_vec());
+
     let update_params_builder = GetUpdatesParams::builder();
     let mut update_params = update_params_builder.clone().build();
 
