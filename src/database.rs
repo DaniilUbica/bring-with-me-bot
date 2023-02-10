@@ -50,8 +50,7 @@ pub mod Database {
         }
     }
 
-    pub fn get_record(name: String) -> String {
-
+    fn get_rus_info(name: String) -> String {
         let query = format!("SELECT DISTINCT rus_info, rus_allowed FROM {TABLE_NAME} WHERE rus_name = '{name}'");
         let mut answer = String::new();
 
@@ -78,36 +77,54 @@ pub mod Database {
 
             let v: Vec<&str> = answer.split_whitespace().collect();
 
-            let answer = v[0].to_owned() + "\n\nКороче говоря: " + v[1];
+            answer = v[0].to_owned() + "\n\nКороче говоря: " + v[1];
 
-            return answer;
         }
-        else {
-            let query = format!("SELECT DISTINCT eng_info, eng_allowed FROM {TABLE_NAME} WHERE eng_name = '{name}'");
 
-            connection
-            .iterate(query, |pairs| {
-                for &(_name, value) in pairs.iter() {
-                    let value = match value {
-                        Some(val) => val,
-                        None => { 
-                            eprintln!("Can't get value from database");
-                            " "
-                        }
-                    };
-
-                    let s = format!(" {}", value);
-                    answer += &s;
-                }
-                true
-            })
-            .expect("Error in request to database");
-        }
-        let v: Vec<&str> = answer.split_whitespace().collect();
-
-        let answer = v[0].to_owned() + "\n\nIn short: " + v[1];
         answer
+    }
 
+    fn get_eng_info(name: String) -> String {
+        let query = format!("SELECT DISTINCT eng_info, eng_allowed FROM {TABLE_NAME} WHERE eng_name = '{name}'");
+        let mut answer = String::new();
+
+        let connection = connect_to_db();
+
+        connection
+        .iterate(query, |pairs| {
+            for &(_name, value) in pairs.iter() {
+                let value = match value {
+                    Some(val) => val,
+                    None => { 
+                        eprintln!("Can't get value from database");
+                        " "
+                    }
+                };
+                let s = format!(" {}", value);
+                answer += &s;
+            }
+            true
+        })
+        .expect("Error in request to database");
+
+        if !answer.is_empty() {
+
+            let v: Vec<&str> = answer.split_whitespace().collect();
+
+            answer = v[0].to_owned() + "\n\nIn short: " + v[1];
+        }
+
+        answer
+    }
+
+    pub fn get_record(name: String) -> String {
+        let mut ret = get_rus_info(name.clone());
+        
+        if ret.is_empty() {
+            ret = get_eng_info(name);
+        }
+
+        ret
     }
 
     pub fn get_item_names(name: &String) -> (String, String) {
