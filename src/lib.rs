@@ -53,7 +53,7 @@ pub fn send_message(message: Message, api: &Api, keyboard_markup: &ReplyKeyboard
     }
 
     else if message.clone().text.unwrap() == "/start" {
-        message_text = format!("Привет, я @{}", username);
+        message_text = format!("Привет, я @{}\nПросто напиши мне, что ты хочешь взять с собой\n\nHi, i am @{}\nJust text me what you want to take with you", username, username);
         photo_path = std::path::PathBuf::from(format!("./Photos/logo.png"));
     }
 
